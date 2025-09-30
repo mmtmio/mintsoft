@@ -36,6 +36,7 @@ module Mintsoft
         error_class = case response.status
         when 400 then ValidationError
         when 401 then AuthenticationError
+        when 403 then ForbiddenError
         else APIError
         end
 
@@ -45,10 +46,12 @@ module Mintsoft
 
       def build_error_message(status, error_message)
         case status
-        when 401
-          "Invalid or expired token"
         when 400
           "Invalid request data: #{error_message}"
+        when 401
+          "Invalid or expired token"
+        when 403
+          "Insufficient permissions"
         else
           "API error: #{status} - #{error_message}"
         end

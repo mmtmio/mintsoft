@@ -18,6 +18,8 @@ module Mintsoft
   # Authentication and authorization errors
   class AuthenticationError < APIError; end
 
+  class ForbiddenError < APIError; end
+
   # Request validation errors
   class ValidationError < APIError; end
 end

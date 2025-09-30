@@ -68,6 +68,8 @@ rescue Mintsoft::AuthClient::AuthenticationError => e
   puts "Authentication failed: #{e.message}"
 rescue Mintsoft::AuthenticationError => e
   puts "Token expired: #{e.message}"
+rescue Mintsoft::ForbiddenError => e
+  puts "Insufficient permissions: #{e.message}"
 rescue Mintsoft::ValidationError => e
   puts "Validation error: #{e.message}"
 end
@@ -135,13 +137,18 @@ active_reasons = reasons.select(&:active?)
 return_obj = client.returns.create(order_id)
 
 # Add item to return
-result = client.returns.add_item(return_obj.id, {
-  product_id: 123,
-  quantity: 2,
-  reason_id: reason_id,
-  unit_value: 25.00,
-  notes: "Optional notes"
-})
+begin
+  result = client.returns.add_item(return_obj.id, {
+    product_id: 123,
+    quantity: 2,
+    reason_id: reason_id,
+    unit_value: 25.00,
+    notes: "Optional notes"
+  })
+rescue Mintsoft::ForbiddenError => e
+  # This typically occurs when credentials don't have permission to add items to returns
+  puts "Permission denied: #{e.message}"
+end
 
 # Retrieve a specific return by ID
 return_obj = client.returns.retrieve(return_id)
@@ -169,6 +176,10 @@ rescue Mintsoft::AuthenticationError => e
 rescue Mintsoft::AuthClient::AuthenticationError => e
   # Invalid credentials when getting auth token
   puts "Auth client authentication failed: #{e.message}"
+  puts "Status: #{e.status_code}"
+rescue Mintsoft::ForbiddenError => e
+  # Insufficient permissions (403) - typically when adding items to returns
+  puts "Insufficient permissions: #{e.message}"
   puts "Status: #{e.status_code}"
 rescue Mintsoft::ValidationError => e
   # Invalid request data (400)
