@@ -1,63 +1,70 @@
 PATH
   remote: .
   specs:
-    mintsoft (0.1.9)
-      activesupport (~> 7.0)
+    mintsoft (0.1.12)
+      activesupport (>= 7.0)
       faraday (~> 2.0)
       faraday-net_http (~> 3.0)
+      ostruct
 
 GEM
   remote: https://rubygems.org/
   specs:
-    activesupport (7.2.2.2)
+    activesupport (8.1.4.1)
       base64
-      benchmark (>= 0.3)
       bigdecimal
       concurrent-ruby (~> 1.0, >= 1.3.1)
       connection_pool (>= 2.2.5)
       drb
       i18n (>= 1.6, < 2)
+      json
       logger (>= 1.4.2)
       minitest (>= 5.1)
       securerandom (>= 0.3)
       tzinfo (~> 2.0, >= 2.0.5)
+      uri (>= 0.13.1)
     addressable (2.8.7)
       public_suffix (>= 2.0.2, < 7.0)
     ast (2.4.3)
     base64 (0.3.0)
-    benchmark (0.4.1)
-    bigdecimal (3.2.2)
-    concurrent-ruby (1.3.5)
-    connection_pool (2.5.3)
+    bigdecimal (4.1.3)
+    concurrent-ruby (1.3.8)
+    connection_pool (3.0.2)
     crack (1.0.0)
       bigdecimal
       rexml
     diff-lcs (1.6.2)
     drb (2.2.3)
-    faraday (2.13.4)
-      faraday-net_http (>= 2.0, < 3.5)
+    faraday (2.15.1)
+      faraday-net_http (>= 2.0, < 3.6)
       json
       logger
-    faraday-net_http (3.4.1)
-      net-http (>= 0.5.0)
+    faraday-net_http (3.5.0)
+      net-http (~> 0.5)
     hashdiff (1.2.0)
     httplog (1.7.3)
       rack (>= 2.0)
       rainbow (>= 2.0.0)
-    i18n (1.14.7)
+    i18n (1.15.2)
       concurrent-ruby (~> 1.0)
-    json (2.13.2)
+    json (2.21.2)
     language_server-protocol (3.17.0.5)
     lint_roller (1.1.0)
     logger (1.7.0)
-    minitest (5.25.5)
-    net-http (0.6.0)
-      uri
+    minitest (6.1.0)
+      drb (~> 2.0)
+      prism (>= 1.5, < 3)
+    net-http (0.10.0)
+      net-protocol (>= 0.3.0)
+      uri (>= 0.11.1)
+    net-protocol (0.4.0)
+      timeout
+    ostruct (0.6.3)
     parallel (1.27.0)
     parser (3.3.9.0)
       ast (~> 2.4.1)
       racc
-    prism (1.4.0)
+    prism (1.9.0)
     public_suffix (6.0.2)
     racc (1.8.1)
     rack (3.2.0)
@@ -110,12 +117,13 @@ GEM
     standard-performance (1.8.0)
       lint_roller (~> 1.1)
       rubocop-performance (~> 1.25.0)
+    timeout (0.6.1)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
     unicode-display_width (3.1.5)
       unicode-emoji (~> 4.0, >= 4.0.4)
-    unicode-emoji (4.0.4)
-    uri (1.0.3)
+    unicode-emoji (4.3.0)
+    uri (1.1.2)
     webmock (3.25.1)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
