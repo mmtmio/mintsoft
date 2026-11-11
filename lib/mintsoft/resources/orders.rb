@@ -27,7 +27,32 @@ module Mintsoft
         end
       end
 
+      def create(attributes)
+        validate_attributes!(attributes)
+
+        payload = format_payload(attributes)
+        response = put_request("/api/Order", body: payload)
+        response_data = handle_response(response)
+
+        parse_orders(response_data)
+      end
+
       private
+
+      def validate_attributes!(attributes)
+        raise ValidationError, "Order attributes required" unless attributes.is_a?(Hash) && !attributes.empty?
+      end
+
+      def format_payload(value)
+        case value
+        when Hash
+          value.to_h { |key, val| [key.to_s.camelcase, format_payload(val)] }
+        when Array
+          value.map { |item| format_payload(item) }
+        else
+          value
+        end
+      end
 
       def validate_order_number!(order_number)
         raise ValidationError, "Order number required" if order_number.nil? || order_number.empty?
