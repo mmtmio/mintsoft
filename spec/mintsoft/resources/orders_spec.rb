@@ -225,6 +225,93 @@ RSpec.describe Mintsoft::Resources::Orders do
     end
   end
 
+  describe "#add_connect_action" do
+    let(:connect_action_attributes) do
+      {
+        type: "API",
+        extra_code1: "https://example.com/mintsoft/despatched",
+        extra_code2: "https://example.com/mintsoft/cancelled"
+      }
+    end
+
+    context "with valid parameters" do
+      it "returns Order object with response data" do
+        response_data = {
+          "ID" => 321,
+          "Success" => true,
+          "SensitiveData" => nil,
+          "Message" => "Connect action added",
+          "WarningMessage" => nil,
+          "AllocatedFromReplen" => false
+        }
+
+        stub_request(:put, "https://api.mintsoft.co.uk/api/Order/789/ConnectActions")
+          .with(
+            headers: {"ms-apikey" => "test_token"},
+            body: {
+              "Type" => "API",
+              "ExtraCode1" => "https://example.com/mintsoft/despatched",
+              "ExtraCode2" => "https://example.com/mintsoft/cancelled"
+            }.to_json
+          )
+          .to_return(status: 200, body: response_data.to_json, headers: {"Content-Type" => "application/json"})
+
+        result = orders_resource.add_connect_action(789, connect_action_attributes)
+
+        expect(result).to be_a(Mintsoft::Objects::Order)
+        expect(result.id).to eq(321)
+        expect(result.success).to be true
+        expect(result.message).to eq("Connect action added")
+
+        # Test original response is preserved with original casing
+        expect(result.original_response["ID"]).to eq(321)
+        expect(result.original_response["Success"]).to be true
+      end
+    end
+
+    context "with invalid parameters" do
+      it "raises ValidationError for nil ID" do
+        expect {
+          orders_resource.add_connect_action(nil, connect_action_attributes)
+        }.to raise_error(Mintsoft::ValidationError, "ID must be present")
+      end
+
+      it "raises ValidationError for nil attributes" do
+        expect {
+          orders_resource.add_connect_action(789, nil)
+        }.to raise_error(Mintsoft::ValidationError, "Connect action attributes required")
+      end
+
+      it "raises ValidationError for empty attributes" do
+        expect {
+          orders_resource.add_connect_action(789, {})
+        }.to raise_error(Mintsoft::ValidationError, "Connect action attributes required")
+      end
+    end
+
+    context "with authentication error" do
+      it "raises AuthenticationError for 401 response" do
+        stub_request(:put, "https://api.mintsoft.co.uk/api/Order/789/ConnectActions")
+          .to_return(status: 401, body: "Unauthorized")
+
+        expect {
+          orders_resource.add_connect_action(789, connect_action_attributes)
+        }.to raise_error(Mintsoft::AuthenticationError, "Invalid or expired token")
+      end
+    end
+
+    context "with other API errors" do
+      it "raises APIError for 404 response" do
+        stub_request(:put, "https://api.mintsoft.co.uk/api/Order/789/ConnectActions")
+          .to_return(status: 404, body: "Order not found")
+
+        expect {
+          orders_resource.add_connect_action(789, connect_action_attributes)
+        }.to raise_error(Mintsoft::APIError, "API error: 404 - Order not found")
+      end
+    end
+  end
+
   describe "#retrieve" do
     context "with valid ID" do
       it "returns Order object" do

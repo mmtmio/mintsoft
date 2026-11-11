@@ -37,10 +37,25 @@ module Mintsoft
         parse_orders(response_data)
       end
 
+      def add_connect_action(id, attributes)
+        validate_id!(id)
+        validate_connect_action_attributes!(attributes)
+
+        payload = format_payload(attributes)
+        response = put_request("/api/Order/#{id}/ConnectActions", body: payload)
+        response_data = handle_response(response)
+
+        Objects::Order.new(response_data)
+      end
+
       private
 
       def validate_attributes!(attributes)
         raise ValidationError, "Order attributes required" unless attributes.is_a?(Hash) && !attributes.empty?
+      end
+
+      def validate_connect_action_attributes!(attributes)
+        raise ValidationError, "Connect action attributes required" unless attributes.is_a?(Hash) && !attributes.empty?
       end
 
       def format_payload(value)
