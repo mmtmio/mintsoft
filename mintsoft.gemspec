@@ -36,7 +36,8 @@ Gem::Specification.new do |spec|
   # Runtime dependencies
   spec.add_dependency "faraday", "~> 2.0"
   spec.add_dependency "faraday-net_http", "~> 3.0"
-  spec.add_dependency "activesupport", "~> 7.0"
+  spec.add_dependency "activesupport", ">= 7.0", "< 9"
+  spec.add_dependency "ostruct"
 
   # Development dependencies
   spec.add_development_dependency "rspec", "~> 3.0"
