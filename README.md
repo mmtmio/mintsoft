@@ -5,7 +5,7 @@ A Ruby wrapper for the Mintsoft API that provides simple token-based authenticat
 ## Features
 
 - **Token-only authentication**: Manual token management for full control
-- **7 Essential API endpoints**: Authentication, Order Search, Create Orders, Return Reasons, Create Returns, Add Return Items, Retrieve Returns
+- **8 Essential API endpoints**: Authentication, Order Search, Create Orders, Order Webhooks, Return Reasons, Create Returns, Add Return Items, Retrieve Returns
 - **OpenStruct-based objects**: Flexible response handling with automatic attribute conversion
 - **Faraday HTTP client**: Robust HTTP handling with JSON support
 - **Comprehensive error handling**: Clear error messages for common scenarios
@@ -150,6 +150,16 @@ result = results.first
 puts result.order_id   # Mintsoft order ID
 puts result.success    # true when the order was created
 puts result.message    # Message from Mintsoft, e.g. why creation failed
+
+# Register webhooks on an order (PUT /api/Order/{id}/ConnectActions)
+# Mintsoft calls extra_code1 when the order is despatched and extra_code2 when it is cancelled.
+result = client.orders.add_connect_action(order_id, {
+  type: "API",
+  extra_code1: "https://example.com/mintsoft/despatched",
+  extra_code2: "https://example.com/mintsoft/cancelled"
+})
+puts result.success    # true when the connect action was added
+puts result.message    # Message from Mintsoft
 ```
 
 #### Returns
