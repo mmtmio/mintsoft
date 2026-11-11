@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     mintsoft (0.1.12)
-      activesupport (>= 7.0, < 9)
+      activesupport (>= 7.0)
       faraday (~> 2.0)
       faraday-net_http (~> 3.0)
       ostruct
