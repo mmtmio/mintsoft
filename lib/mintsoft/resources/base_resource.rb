@@ -21,6 +21,12 @@ module Mintsoft
         end
       end
 
+      def put_request(url, body: {})
+        @client.connection.put(url) do |req|
+          req.body = body unless body.empty?
+        end
+      end
+
       def handle_response(response)
         case response.status
         when 200..299

@@ -72,6 +72,246 @@ RSpec.describe Mintsoft::Resources::Orders do
     end
   end
 
+  describe "#create" do
+    let(:order_attributes) do
+      {
+        order_number: "ORD-125",
+        external_order_reference: "REF-1",
+        first_name: "Jane",
+        last_name: "Doe",
+        address1: "22 Test Lane",
+        town: "Testsend",
+        post_code: "G13 1EE",
+        country: "UK",
+        courier_service: "Royal Mail Tracked 48",
+        channel_id: 87,
+        warehouse_id: 24,
+        currency: "GBP",
+        order_value: 12.5,
+        order_items: [
+          {"SKU" => "S-4001", :quantity => 1, :unit_price => 10.0, :unit_price_vat => 2.5}
+        ]
+      }
+    end
+
+    context "with valid attributes" do
+      it "returns array of Order objects with original response data" do
+        response_data = [
+          {
+            "OrderId" => 789,
+            "DropShipOrderId" => 0,
+            "OrderNumber" => "ORD-125",
+            "Success" => true,
+            "OrderStatusId" => 1,
+            "OrderStatus" => "NEW",
+            "Message" => nil,
+            "OrderItems" => [{"SKU" => "S-4001", "Quantity" => 1}]
+          }
+        ]
+
+        stub_request(:put, "https://api.mintsoft.co.uk/api/Order")
+          .with(
+            headers: {"ms-apikey" => "test_token"},
+            body: {
+              "OrderNumber" => "ORD-125",
+              "ExternalOrderReference" => "REF-1",
+              "FirstName" => "Jane",
+              "LastName" => "Doe",
+              "Address1" => "22 Test Lane",
+              "Town" => "Testsend",
+              "PostCode" => "G13 1EE",
+              "Country" => "UK",
+              "CourierService" => "Royal Mail Tracked 48",
+              "ChannelId" => 87,
+              "WarehouseId" => 24,
+              "Currency" => "GBP",
+              "OrderValue" => 12.5,
+              "OrderItems" => [
+                {"SKU" => "S-4001", "Quantity" => 1, "UnitPrice" => 10.0, "UnitPriceVat" => 2.5}
+              ]
+            }.to_json
+          )
+          .to_return(
+            status: 200,
+            body: response_data.to_json,
+            headers: {"Content-Type" => "application/json"}
+          )
+
+        result = orders_resource.create(order_attributes)
+
+        expect(result).to be_an(Array)
+        expect(result.size).to eq(1)
+        expect(result.first).to be_a(Mintsoft::Objects::Order)
+        expect(result.first.order_id).to eq(789)
+        expect(result.first.order_number).to eq("ORD-125")
+        expect(result.first.success).to be true
+        expect(result.first.order_items.first.sku).to eq("S-4001")
+
+        # Test original response is preserved with original casing
+        expect(result.first.original_response["OrderId"]).to eq(789)
+        expect(result.first.original_response["OrderStatus"]).to eq("NEW")
+      end
+
+      it "sends keys already in Mintsoft casing unchanged" do
+        stub_request(:put, "https://api.mintsoft.co.uk/api/Order")
+          .with(body: {"OrderNumber" => "ORD-126", "VATNumber" => "GB123", "OrderItems" => [{"SKU" => "S-4001"}]}.to_json)
+          .to_return(status: 200, body: [].to_json, headers: {"Content-Type" => "application/json"})
+
+        result = orders_resource.create({"OrderNumber" => "ORD-126", "VATNumber" => "GB123", "OrderItems" => [{"SKU" => "S-4001"}]})
+
+        expect(result).to eq([])
+      end
+    end
+
+    context "when Mintsoft does not create the order" do
+      it "returns the result without raising" do
+        response_data = [{"OrderId" => 0, "OrderNumber" => "ORD-125", "Success" => false, "Message" => "Duplicate order number"}]
+
+        stub_request(:put, "https://api.mintsoft.co.uk/api/Order")
+          .to_return(status: 200, body: response_data.to_json, headers: {"Content-Type" => "application/json"})
+
+        result = orders_resource.create(order_attributes)
+
+        expect(result.first.success).to be false
+        expect(result.first.message).to eq("Duplicate order number")
+      end
+    end
+
+    context "with invalid attributes" do
+      it "raises ValidationError for nil attributes" do
+        expect {
+          orders_resource.create(nil)
+        }.to raise_error(Mintsoft::ValidationError, "Order attributes required")
+      end
+
+      it "raises ValidationError for empty attributes" do
+        expect {
+          orders_resource.create({})
+        }.to raise_error(Mintsoft::ValidationError, "Order attributes required")
+      end
+    end
+
+    context "with bad request" do
+      it "raises ValidationError for 400 response" do
+        stub_request(:put, "https://api.mintsoft.co.uk/api/Order")
+          .to_return(status: 400, body: {"message" => "Country is required"}.to_json, headers: {"Content-Type" => "application/json"})
+
+        expect {
+          orders_resource.create(order_attributes)
+        }.to raise_error(Mintsoft::ValidationError, "Invalid request data: Country is required")
+      end
+    end
+
+    context "with authentication error" do
+      it "raises AuthenticationError for 401 response" do
+        stub_request(:put, "https://api.mintsoft.co.uk/api/Order")
+          .to_return(status: 401, body: "Unauthorized")
+
+        expect {
+          orders_resource.create(order_attributes)
+        }.to raise_error(Mintsoft::AuthenticationError, "Invalid or expired token")
+      end
+    end
+
+    context "with other API errors" do
+      it "raises APIError for 500 response" do
+        stub_request(:put, "https://api.mintsoft.co.uk/api/Order")
+          .to_return(status: 500, body: "Internal Server Error")
+
+        expect {
+          orders_resource.create(order_attributes)
+        }.to raise_error(Mintsoft::APIError, "API error: 500 - Internal Server Error")
+      end
+    end
+  end
+
+  describe "#add_connect_action" do
+    let(:connect_action_attributes) do
+      {
+        type: "API",
+        extra_code1: "https://example.com/mintsoft/despatched",
+        extra_code2: "https://example.com/mintsoft/cancelled"
+      }
+    end
+
+    context "with valid parameters" do
+      it "returns Order object with response data" do
+        response_data = {
+          "ID" => 321,
+          "Success" => true,
+          "SensitiveData" => nil,
+          "Message" => "Connect action added",
+          "WarningMessage" => nil,
+          "AllocatedFromReplen" => false
+        }
+
+        stub_request(:put, "https://api.mintsoft.co.uk/api/Order/789/ConnectActions")
+          .with(
+            headers: {"ms-apikey" => "test_token"},
+            body: {
+              "Type" => "API",
+              "ExtraCode1" => "https://example.com/mintsoft/despatched",
+              "ExtraCode2" => "https://example.com/mintsoft/cancelled"
+            }.to_json
+          )
+          .to_return(status: 200, body: response_data.to_json, headers: {"Content-Type" => "application/json"})
+
+        result = orders_resource.add_connect_action(789, connect_action_attributes)
+
+        expect(result).to be_a(Mintsoft::Objects::Order)
+        expect(result.id).to eq(321)
+        expect(result.success).to be true
+        expect(result.message).to eq("Connect action added")
+
+        # Test original response is preserved with original casing
+        expect(result.original_response["ID"]).to eq(321)
+        expect(result.original_response["Success"]).to be true
+      end
+    end
+
+    context "with invalid parameters" do
+      it "raises ValidationError for nil ID" do
+        expect {
+          orders_resource.add_connect_action(nil, connect_action_attributes)
+        }.to raise_error(Mintsoft::ValidationError, "ID must be present")
+      end
+
+      it "raises ValidationError for nil attributes" do
+        expect {
+          orders_resource.add_connect_action(789, nil)
+        }.to raise_error(Mintsoft::ValidationError, "Connect action attributes required")
+      end
+
+      it "raises ValidationError for empty attributes" do
+        expect {
+          orders_resource.add_connect_action(789, {})
+        }.to raise_error(Mintsoft::ValidationError, "Connect action attributes required")
+      end
+    end
+
+    context "with authentication error" do
+      it "raises AuthenticationError for 401 response" do
+        stub_request(:put, "https://api.mintsoft.co.uk/api/Order/789/ConnectActions")
+          .to_return(status: 401, body: "Unauthorized")
+
+        expect {
+          orders_resource.add_connect_action(789, connect_action_attributes)
+        }.to raise_error(Mintsoft::AuthenticationError, "Invalid or expired token")
+      end
+    end
+
+    context "with other API errors" do
+      it "raises APIError for 404 response" do
+        stub_request(:put, "https://api.mintsoft.co.uk/api/Order/789/ConnectActions")
+          .to_return(status: 404, body: "Order not found")
+
+        expect {
+          orders_resource.add_connect_action(789, connect_action_attributes)
+        }.to raise_error(Mintsoft::APIError, "API error: 404 - Order not found")
+      end
+    end
+  end
+
   describe "#retrieve" do
     context "with valid ID" do
       it "returns Order object" do

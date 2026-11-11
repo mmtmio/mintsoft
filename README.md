@@ -5,7 +5,7 @@ A Ruby wrapper for the Mintsoft API that provides simple token-based authenticat
 ## Features
 
 - **Token-only authentication**: Manual token management for full control
-- **6 Essential API endpoints**: Authentication, Order Search, Return Reasons, Create Returns, Add Return Items, Retrieve Returns
+- **8 Essential API endpoints**: Authentication, Order Search, Create Orders, Order Webhooks, Return Reasons, Create Returns, Add Return Items, Retrieve Returns
 - **OpenStruct-based objects**: Flexible response handling with automatic attribute conversion
 - **Faraday HTTP client**: Robust HTTP handling with JSON support
 - **Comprehensive error handling**: Clear error messages for common scenarios
@@ -124,6 +124,42 @@ puts order.id              # Direct access to order ID
 puts order.order_number    # Direct access to order number
 puts order.customer_id     # Direct access to customer ID
 puts order.items&.length || 0  # Get number of items if available
+
+# Create an order (PUT /api/Order)
+# snake_case keys are converted to Mintsoft's casing, including nested order items.
+# Keys already in Mintsoft's casing (e.g. "SKU", "VATNumber") are sent unchanged.
+results = client.orders.create({
+  order_number: "ORD-125",
+  first_name: "Jane",
+  last_name: "Doe",
+  address1: "22 Test Lane",
+  town: "Testsend",
+  post_code: "G13 1EE",
+  country: "UK",
+  courier_service: "Royal Mail Tracked 48",
+  channel_id: 87,
+  warehouse_id: 24,
+  currency: "GBP",
+  order_items: [
+    {"SKU" => "S-4001", :quantity => 1, :unit_price => 0.0, :unit_price_vat => 0.0}
+  ]
+})
+
+# Mintsoft returns one result per order created
+result = results.first
+puts result.order_id   # Mintsoft order ID
+puts result.success    # true when the order was created
+puts result.message    # Message from Mintsoft, e.g. why creation failed
+
+# Register webhooks on an order (PUT /api/Order/{id}/ConnectActions)
+# Mintsoft calls extra_code1 when the order is despatched and extra_code2 when it is cancelled.
+result = client.orders.add_connect_action(order_id, {
+  type: "API",
+  extra_code1: "https://example.com/mintsoft/despatched",
+  extra_code2: "https://example.com/mintsoft/cancelled"
+})
+puts result.success    # true when the connect action was added
+puts result.message    # Message from Mintsoft
 ```
 
 #### Returns
